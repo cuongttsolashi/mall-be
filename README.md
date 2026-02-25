@@ -1,14 +1,15 @@
-# NestJS API Starter
+# mall-be
 
-A scalable REST API starter built with NestJS, Prisma, PostgreSQL, and JWT authentication. Features clean architecture with repository pattern, role-based access control, and local file storage.
+Backend REST API cho hệ thống thương mại điện tử, xây dựng với NestJS, Prisma, PostgreSQL và JWT authentication.
 
-## Features
+## Tính năng
 
-- **Authentication & Authorization** — JWT-based auth, Passport strategies, RBAC (CUSTOMER, ADMIN, VENDOR), bcrypt password hashing
-- **User Management** — Registration, login, profile management, soft delete, role-based permissions
-- **File Storage** — Local file storage support
-- **Clean Architecture** — Repository pattern with generic CRUD, soft-delete support, custom decorators, guards, exception filters, and response interceptors
-- **API Documentation** — Swagger/OpenAPI with interactive explorer
+- **Xác thực & Phân quyền** — JWT access/refresh token, Passport strategies, RBAC (CUSTOMER, ADMIN), bcrypt password hashing
+- **Quản lý người dùng** — Đăng ký, đăng nhập, quản lý hồ sơ, soft delete, phân quyền theo vai trò
+- **File Storage** — Hỗ trợ lưu trữ file cục bộ
+- **Clean Architecture** — Repository pattern với CRUD tổng quát, soft-delete, custom decorators, guards, exception filters, response interceptors
+- **API Documentation** — Swagger/OpenAPI (chỉ khả dụng ngoài môi trường production)
+- **Bảo mật** — Helmet, CORS, rate limiting, input validation
 
 ## Tech Stack
 
@@ -16,138 +17,141 @@ A scalable REST API starter built with NestJS, Prisma, PostgreSQL, and JWT authe
 |---|---|
 | Framework | NestJS 11 |
 | Language | TypeScript 5 |
-| Database | PostgreSQL 17 + Prisma ORM 7 |
-| Auth | Passport.js + JWT |
+| Database | PostgreSQL + Prisma ORM 7 |
+| Auth | Passport.js + JWT (Access & Refresh Token) |
 | Storage | Local filesystem |
 | Validation | class-validator & class-transformer |
 | Documentation | Swagger/OpenAPI |
 | Testing | Jest |
 
-## Prerequisites
+## Yêu cầu
 
 - Node.js v18+
 - PostgreSQL v14+
-- npm
+- yarn
 
-## Getting Started
+## Bắt đầu
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/kaungkhantdev/nestjs-api-starter.git
-cd nestjs-api-starter
+# 1. Clone repository
+git clone <repository-url>
+cd mall-be
 
-# 2. Install dependencies
-npm install
+# 2. Cài đặt dependencies
+yarn install
 
-# 3. Configure environment
+# 3. Cấu hình môi trường
 cp .env.example .env
 ```
 
-Edit `.env` with your values:
+Chỉnh sửa `.env` với các giá trị của bạn:
 
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/nestjs_starter?schema=public"
-JWT_SECRET="your-secret"
-JWT_EXPIRATION="7d"
-PORT=3000
+PORT=8000
 NODE_ENV="development"
+
+DATABASE_URL="postgresql://user:password@localhost:5432/mall_be?schema=public"
+
+FRONTEND_URL=http://localhost:3000
+
+JWT_SECRET="your-super-secret-jwt-key"
+JWT_ACCESS_TOKEN_EXPIRES_IN="15m"
+JWT_REFRESH_SECRET="your-super-secret-refresh-jwt-key"
+JWT_REFRESH_TOKEN_EXPIRES_IN="7d"
+
+MAX_FILE_SIZE_MB=10
+LOCAL_STORAGE_PATH="./uploads"
 ```
 
 ```bash
-# 4. Run migrations
-npm run prisma:migrate:deploy
+# 4. Chạy migration
+yarn prisma:migrate:deploy
 
 # 5. Generate Prisma client
-npm run prisma:generate
+yarn prisma:generate
 
-# 6. Start in development mode
-npm run start:dev
+# 6. Khởi động ở chế độ development
+yarn start:dev
 ```
 
-## Running with Docker
+API chạy tại `http://localhost:8000`
+Swagger docs tại `http://localhost:8000/api`
 
-Build and run with Docker directly:
+## Chạy với Docker
+
 ```bash
-# Build the image
-docker build --build-arg DATABASE_URL="postgresql://placeholder" -t nestjs-api-starter .
-
-# Run the container
-docker run -p 3000:3000 --env-file .env nestjs-api-starter
-```
-
-Or use Docker Compose (starts both the API and PostgreSQL):
-```bash
+# Build và chạy với Docker Compose (API + PostgreSQL)
 docker compose up --build
 ```
 
-The API will be available at `http://localhost:3000`
-Swagger docs at `http://localhost:3000/api`
+Hoặc build Docker image thủ công:
+
+```bash
+docker build --build-arg DATABASE_URL="postgresql://placeholder" -t mall-be .
+docker run -p 8000:8000 --env-file .env mall-be
+```
 
 ## Scripts
 
-| Command | Description |
+| Lệnh | Mô tả |
 |---|---|
-| `npm run start:dev` | Start in watch mode |
-| `npm run start:prod` | Start production build |
-| `npm run build` | Build the project |
-| `npm run test` | Run unit tests |
-| `npm run test:e2e` | Run E2E tests |
-| `npm run test:cov` | Generate coverage report |
-| `npm run lint` | Lint and auto-fix |
-| `npm run format` | Format with Prettier |
-| `npm run prisma:migrate:dev` | Create a new migration |
-| `npm run prisma:studio` | Open Prisma Studio |
+| `yarn start:dev` | Khởi động ở chế độ watch |
+| `yarn start:prod` | Khởi động production build |
+| `yarn build` | Build project |
+| `yarn test` | Chạy unit tests |
+| `yarn test:cov` | Tạo coverage report |
+| `yarn lint` | Lint và auto-fix |
+| `yarn format` | Format với Prettier |
+| `yarn prisma:migrate:dev` | Tạo migration mới |
+| `yarn prisma:migrate:deploy` | Chạy migration |
+| `yarn prisma:studio` | Mở Prisma Studio |
 
 ## API Endpoints
 
 ### Authentication
-- `POST /auth/register` — Register a new user
-- `POST /auth/login` — Login and receive JWT token
+- `POST /api/v1/auth/register` — Đăng ký tài khoản mới
+- `POST /api/v1/auth/login` — Đăng nhập và nhận JWT token
 
 ### Users
-- `GET /users` — List all users (Admin only)
-- `GET /users/:id` — Get user by ID
-- `PUT /users/:id` — Update user
-- `DELETE /users/:id` — Soft delete user
+- `GET /api/v1/users` — Danh sách người dùng (Admin only)
+- `GET /api/v1/users/:id` — Lấy thông tin người dùng
+- `PUT /api/v1/users/:id` — Cập nhật người dùng
+- `DELETE /api/v1/users/:id` — Soft delete người dùng
 
-Full documentation available at `/api` when the server is running.
+Tài liệu đầy đủ tại `/api` khi server đang chạy.
 
-
-## Architecture
+## Kiến trúc
 
 ### Repository Pattern
-- `BaseRepository` — Generic CRUD operations
-- `ReadRepository` — Read-only operations
-- `WriteRepository` — Create, update, delete
-- `SoftDeletableRepository` — Soft delete support
+- `BaseRepository` — CRUD tổng quát
+- `ReadRepository` — Các thao tác đọc
+- `WriteRepository` — Tạo, cập nhật, xóa
+- `SoftDeletableRepository` — Hỗ trợ soft delete
 
 ### Auth Flow
-1. User registers or logs in
-2. Server validates credentials and issues a JWT
-3. Client sends JWT in the `Authorization` header
-4. `JwtAuthGuard` validates the token on protected routes
-5. `RoleGuard` enforces role-based permissions
+1. Người dùng đăng ký hoặc đăng nhập
+2. Server xác thực thông tin và cấp access token + refresh token
+3. Client gửi access token trong header `Authorization: Bearer <token>`
+4. `JwtAuthGuard` xác thực token trên các route được bảo vệ
+5. `RoleGuard` kiểm tra phân quyền theo vai trò
 
 ### Custom Decorators
-- `@Public()` — Bypass JWT guard
-- `@Roles(UserRole.ADMIN)` — Restrict by role
-- `@CurrentUser()` — Inject current user from request
+- `@Public()` — Bỏ qua JWT guard
+- `@Roles(UserRole.ADMIN)` — Giới hạn theo vai trò
+- `@CurrentUser()` — Inject thông tin user hiện tại từ request
 
-## Security
+## Bảo mật
 
 - bcrypt password hashing
-- JWT authentication
+- JWT access & refresh token
 - Role-based access control (RBAC)
-- Input validation and payload whitelisting
-- SQL injection protection via Prisma
+- Input validation và payload whitelisting
+- Bảo vệ SQL injection qua Prisma
 - Global exception handling
 - Rate limiting via `@nestjs/throttler`
+- Helmet security headers
+- CORS cấu hình
 
 ## License
 
 [MIT](LICENSE)
-
-## Author
-
-**Kaung Khant Zaw**
-[github.com/kaungkhantdev](https://github.com/kaungkhantdev)
