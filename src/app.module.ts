@@ -8,7 +8,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { StorageModule } from './shared/storage/storage.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { SessionAuthGuard } from './common/guards/session-auth.guard';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -40,7 +40,7 @@ import { AppService } from './app.service';
     },
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      useClass: SessionAuthGuard,
     },
   ],
 })

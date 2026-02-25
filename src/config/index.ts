@@ -1,11 +1,13 @@
 import appConfig from './app.config';
 import databaseConfig from './database.config';
-import jwtConfig from './jwt.config';
 import storageConfig from './storage.config';
+import oauthConfig from './oauth.config';
+import emailConfig from './email.config';
 
 export default () => ({
   ...appConfig(),
   ...databaseConfig(),
-  ...jwtConfig(),
   ...storageConfig(),
+  ...oauthConfig(),
+  ...emailConfig(),
 });

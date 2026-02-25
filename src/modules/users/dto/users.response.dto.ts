@@ -1,56 +1,35 @@
 import { Exclude, Expose } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole } from 'generated/prisma/enums';
+import { UserType } from 'generated/prisma/client';
 
 @Exclude()
 export class UserResponseDto {
   @Expose()
-  @ApiProperty({ description: 'User unique identifier', example: 'uuid-456' })
+  @ApiProperty({ example: 'cuid-123' })
   id: string;
 
   @Expose()
-  @ApiProperty({
-    description: 'User email address',
-    example: 'jane.smith@example.com',
-  })
+  @ApiProperty({ example: 'jane.smith@example.com' })
   email: string;
 
   @Expose()
-  @ApiProperty({ description: 'Username', example: 'janesmith' })
-  username: string;
-
-  @Expose()
-  @ApiProperty({ description: 'User first name', example: 'Jane' })
+  @ApiProperty({ example: 'Jane' })
   firstName: string;
 
   @Expose()
-  @ApiProperty({ description: 'User last name', example: 'Smith' })
+  @ApiProperty({ example: 'Smith' })
   lastName: string;
 
   @Expose()
-  @ApiProperty({
-    description: 'User role',
-    enum: UserRole,
-    example: UserRole.CUSTOMER,
-  })
-  role: UserRole;
+  @ApiProperty({ enum: UserType, example: UserType.BUYER })
+  userType: UserType;
 
   @Expose()
-  @ApiProperty({ description: 'User account status', example: true })
-  isActive: boolean;
-
-  @Expose()
-  @ApiProperty({
-    description: 'Account creation timestamp',
-    example: '2024-01-15T10:30:00Z',
-  })
+  @ApiProperty({ example: '2024-01-15T10:30:00Z' })
   createdAt: Date;
 
   @Expose()
-  @ApiProperty({
-    description: 'Account last update timestamp',
-    example: '2024-01-20T14:45:00Z',
-  })
+  @ApiProperty({ example: '2024-01-20T14:45:00Z' })
   updatedAt: Date;
 }
 

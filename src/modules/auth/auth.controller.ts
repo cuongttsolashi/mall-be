@@ -5,202 +5,184 @@ import {
   Res,
   Req,
   Get,
-  UnauthorizedException,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBadRequestResponse,
   ApiConflictResponse,
   ApiUnauthorizedResponse,
-  ApiBearerAuth,
+  ApiBadRequestResponse,
 } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
+import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
-import { AuthService } from './auth.service';
+import { AuthService, OAuthProfile } from './auth.service';
+import { EmailService } from '@/shared/email/email.service';
 import {
-  LoginDto,
   RegisterDto,
-  AuthResponseDto,
-  RefreshResponseDto,
-  LogoutResponseDto,
+  LoginDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  AuthUserDto,
 } from './dto/auth.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import {
-  COOKIE_PATHS,
-  REFRESH_COOKIE,
-  REFRESH_TOKEN_MAX_AGE_MS,
+  SESSION_COOKIE,
+  SESSION_MAX_AGE_MS,
 } from '../../common/constants/routes.constant';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { User } from 'generated/prisma/client';
-import { Throttle } from '@nestjs/throttler';
-import { plainToInstance } from 'class-transformer';
-import { UserResponseDto } from '../users/dto/users.response.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  private readonly cookieOptions = {
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: SESSION_MAX_AGE_MS,
+  };
+
+  constructor(
+    private readonly authService: AuthService,
+    private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Public()
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('register')
-  @ApiOperation({
-    summary: 'Register a new user',
-    description: 'Creates a new user account with the provided credentials',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'User successfully registered',
-    type: AuthResponseDto,
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid input data',
-  })
-  @ApiConflictResponse({
-    description: 'User with this email or username already exists',
-  })
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiResponse({ status: 201, description: 'User registered successfully' })
+  @ApiConflictResponse({ description: 'Email already exists' })
   async register(
-    @Body() registerDto: RegisterDto,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<AuthResponseDto> {
-    const { user, accessToken, refreshToken } =
-      await this.authService.register(registerDto);
-
-    // Set refreshToken as httpOnly cookie
-    res.cookie(REFRESH_COOKIE, refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: COOKIE_PATHS.authRefresh,
-      maxAge: REFRESH_TOKEN_MAX_AGE_MS,
-    });
-
-    return {
-      user,
-      accessToken,
-    };
-  }
-
-  @Public()
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
-  @Post('login')
-  @ApiOperation({
-    summary: 'User login',
-    description: 'Authenticates a user and returns a JWT access token',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'User successfully authenticated',
-    type: AuthResponseDto,
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid input data',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Invalid credentials',
-  })
-  async login(
-    @Body() loginDto: LoginDto,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<AuthResponseDto> {
-    const { user, accessToken, refreshToken } =
-      await this.authService.login(loginDto);
-
-    // Set refreshToken as httpOnly cookie
-    res.cookie(REFRESH_COOKIE, refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: COOKIE_PATHS.authRefresh,
-      maxAge: REFRESH_TOKEN_MAX_AGE_MS,
-    });
-
-    return {
-      user,
-      accessToken,
-    };
-  }
-
-  @Public()
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
-  @Post('refresh')
-  @ApiOperation({
-    summary: 'Refresh access token',
-    description:
-      'Generates a new access token using the refresh token from httpOnly cookie',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'New access token generated',
-    type: RefreshResponseDto,
-  })
-  @ApiUnauthorizedResponse({
-    description: 'No refresh token or invalid refresh token',
-  })
-  async refresh(
+    @Body() dto: RegisterDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<RefreshResponseDto> {
-    const refreshToken = req.cookies[REFRESH_COOKIE];
-
-    if (!refreshToken) {
-      throw new UnauthorizedException('No refresh token');
-    }
-
-    const { accessToken, refreshToken: newRefreshToken } =
-      await this.authService.refresh(refreshToken);
-
-    // Rotate refresh token
-    res.cookie(REFRESH_COOKIE, newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: COOKIE_PATHS.authRefresh,
-      maxAge: REFRESH_TOKEN_MAX_AGE_MS,
-    });
-
-    return { accessToken };
+  ): Promise<{ user: AuthUserDto }> {
+    const { user, sessionId } = await this.authService.register(dto, req);
+    res.cookie(SESSION_COOKIE, sessionId, this.cookieOptions);
+    return { user };
   }
 
-  @Post('logout')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({
-    summary: 'Logout user',
-    description: 'Clears the refresh token cookie',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Successfully logged out',
-    type: LogoutResponseDto,
-  })
-  async logout(
-    @CurrentUser('id') userId: string,
+  @Public()
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login' })
+  @ApiResponse({ status: 200, description: 'Logged in successfully' })
+  @ApiUnauthorizedResponse({ description: 'Invalid email or password' })
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<LogoutResponseDto> {
-    await this.authService.logout(userId);
-    res.clearCookie(REFRESH_COOKIE, { path: COOKIE_PATHS.authRefresh });
-    return { success: true };
+  ): Promise<{ user: AuthUserDto }> {
+    const { user, sessionId } = await this.authService.login(dto, req);
+    res.cookie(SESSION_COOKIE, sessionId, this.cookieOptions);
+    return { user };
   }
 
   @Get('me')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({
-    summary: 'Get current user',
-    description: 'Returns the authenticated user information',
-  })
+  @ApiOperation({ summary: 'Get current user' })
+  @ApiResponse({ status: 200, description: 'Current user info' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  me(@Req() req: Request): { user: AuthUserDto } {
+    return { user: this.authService.buildUserResponse(req.user as User) };
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Logout' })
+  @ApiResponse({ status: 200, description: 'Logged out successfully' })
+  async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ message: string }> {
+    const sessionId = req.cookies?.[SESSION_COOKIE] as string | undefined;
+    if (sessionId) {
+      await this.authService.logout(sessionId);
+    }
+    res.clearCookie(SESSION_COOKIE, { sameSite: 'lax', httpOnly: true });
+    return { message: 'Logged out successfully' };
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request password reset email' })
   @ApiResponse({
     status: 200,
-    description: 'Current user information',
-    type: UserResponseDto,
+    description: 'Reset email sent (if email exists)',
   })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized - Invalid or missing token',
-  })
-  me(@CurrentUser() user: User) {
-    const result = plainToInstance(UserResponseDto, user, {
-      excludeExtraneousValues: true,
-    });
-    return result;
+  async forgotPassword(
+    @Body() dto: ForgotPasswordDto,
+  ): Promise<{ message: string }> {
+    const rawToken = await this.authService.forgotPassword(dto);
+    if (rawToken) {
+      await this.emailService.sendPasswordResetEmail(dto.email, rawToken);
+    }
+    return { message: 'If this email exists, a reset link has been sent.' };
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password with token' })
+  @ApiResponse({ status: 200, description: 'Password reset successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid or expired reset token' })
+  async resetPassword(
+    @Body() dto: ResetPasswordDto,
+  ): Promise<{ message: string }> {
+    await this.authService.resetPassword(dto);
+    return { message: 'Password reset successfully' };
+  }
+
+  // ─── Google OAuth ───────────────────────────────────────────────────────────
+
+  @Public()
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Initiate Google OAuth' })
+  googleAuth(): void {}
+
+  @Public()
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Google OAuth callback' })
+  async googleCallback(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    const { sessionId } = await this.authService.handleOAuthCallback(
+      req.user as OAuthProfile,
+      req,
+    );
+    res.cookie(SESSION_COOKIE, sessionId, this.cookieOptions);
+    res.redirect(`${this.configService.get<string>('frontendUrl')}/`);
+  }
+
+  // ─── GitHub OAuth ───────────────────────────────────────────────────────────
+
+  @Public()
+  @Get('github')
+  @UseGuards(AuthGuard('github'))
+  @ApiOperation({ summary: 'Initiate GitHub OAuth' })
+  githubAuth(): void {}
+
+  @Public()
+  @Get('github/callback')
+  @UseGuards(AuthGuard('github'))
+  @ApiOperation({ summary: 'GitHub OAuth callback' })
+  async githubCallback(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    const { sessionId } = await this.authService.handleOAuthCallback(
+      req.user as OAuthProfile,
+      req,
+    );
+    res.cookie(SESSION_COOKIE, sessionId, this.cookieOptions);
+    res.redirect(`${this.configService.get<string>('frontendUrl')}/`);
   }
 }

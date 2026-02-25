@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { User } from 'generated/prisma/client';
-import * as bcrypt from 'bcrypt';
 import { plainToInstance } from 'class-transformer';
 import {
   IUsersRepository,
@@ -11,10 +10,6 @@ import {
   UserResponseDto,
 } from './dto/users.response.dto';
 
-type CreateUserInput = Pick<
-  User,
-  'email' | 'username' | 'password' | 'firstName' | 'lastName'
->;
 @Injectable()
 export class UsersService {
   constructor(
@@ -28,28 +23,6 @@ export class UsersService {
 
   async getFindById(id: string): Promise<User | null> {
     return this.usersRepository.findById(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | null> {
-    return this.usersRepository.findByUsername(username);
-  }
-
-  async createUser(data: CreateUserInput): Promise<User> {
-    const existing =
-      data.email && (await this.usersRepository.findByEmail(data.email));
-    if (existing) {
-      throw new Error('User already exists');
-    }
-
-    const safeData: CreateUserInput = {
-      email: data.email,
-      username: data.username,
-      password: data.password,
-      firstName: data.firstName,
-      lastName: data.lastName,
-    };
-
-    return await this.usersRepository.create(safeData);
   }
 
   async getAll(
@@ -70,19 +43,5 @@ export class UsersService {
       limit,
       total,
     };
-  }
-
-  async setRefreshTokenHash(
-    userId: string,
-    refreshTokenHash: string,
-  ): Promise<void> {
-    const hash = await bcrypt.hash(refreshTokenHash, 10);
-    await this.usersRepository.update(userId, {
-      refreshTokenHash: hash,
-    });
-  }
-
-  async clearRefreshTokenHash(userId: string): Promise<void> {
-    await this.usersRepository.update(userId, { refreshTokenHash: null });
   }
 }

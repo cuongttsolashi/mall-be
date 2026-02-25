@@ -5,7 +5,6 @@ import {
   Get,
   Param,
   Query,
-  UseGuards,
   UseInterceptors,
   UploadedFile,
   UploadedFiles,
@@ -14,21 +13,16 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
   ApiConsumes,
   ApiBody,
   ApiQuery,
   ApiParam,
 } from '@nestjs/swagger';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { RolesGuard } from '@/common/guards/role.guard';
 import { StorageService } from './storage.service';
 
 @ApiTags('Storage')
-@ApiBearerAuth('JWT-auth')
 @Controller({ path: 'storage', version: '1' })
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class StorageController {
   constructor(private readonly storageService: StorageService) {}
 

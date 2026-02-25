@@ -3,141 +3,66 @@ import {
   IsString,
   MinLength,
   IsNotEmpty,
-  Matches,
-  MaxLength,
+  IsEnum,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class LoginDto {
-  @ApiProperty({
-    description: 'Username for authentication',
-    example: 'johndoe',
-  })
-  @IsString()
-  @IsNotEmpty()
-  username: string;
-
-  @ApiProperty({
-    description: 'User password',
-    example: 'Password123!',
-    minLength: 6,
-  })
-  @IsString()
-  @IsNotEmpty()
-  password: string;
-}
-
 export class RegisterDto {
-  @ApiProperty({
-    description: 'User email address',
-    example: 'john.doe@example.com',
-  })
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @ApiProperty({
-    description: 'User password',
-    example: 'Password123!',
-    minLength: 6,
-  })
+  @ApiProperty({ example: 'John Doe' })
   @IsString()
   @IsNotEmpty()
-  @MinLength(8)
-  @MaxLength(128)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&._\-#])/, {
-    message:
-      'password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&._-#)',
-  })
+  name: string;
+
+  @ApiProperty({ example: 'john@example.com' })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({ example: 'secret123', minLength: 6 })
+  @IsString()
+  @MinLength(6)
   password: string;
 
-  @ApiProperty({
-    description: 'Username for the account',
-    example: 'johndoe',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @Matches(/^[a-zA-Z0-9_-]+$/, {
-    message:
-      'username can only contain letters, numbers, underscores and hyphens',
-  })
-  username: string;
-
-  @ApiProperty({
-    description: 'User first name',
-    example: 'John',
-    minLength: 2,
-  })
-  @IsString()
-  @MinLength(2)
-  @IsNotEmpty()
-  @Matches(/^[a-zA-ZÀ-ÿ\s'-]+$/, {
-    message:
-      'firstName can only contain letters, spaces, hyphens and apostrophes',
-  })
-  firstName: string;
-
-  @ApiProperty({
-    description: 'User last name',
-    example: 'Doe',
-    minLength: 2,
-  })
-  @IsString()
-  @MinLength(2)
-  @IsNotEmpty()
-  @Matches(/^[a-zA-ZÀ-ÿ\s'-]+$/, {
-    message:
-      'lastName can only contain letters, spaces, hyphens and apostrophes',
-  })
-  lastName: string;
+  @ApiProperty({ enum: ['buyer', 'seller'], example: 'buyer' })
+  @IsEnum(['buyer', 'seller'])
+  userType: 'buyer' | 'seller';
 }
 
-export class UserDataDto {
-  @ApiProperty({ description: 'User unique identifier', example: 'uuid-123' })
-  id: string;
-
-  @ApiProperty({ description: 'User email', example: 'john.doe@example.com' })
+export class LoginDto {
+  @ApiProperty({ example: 'john@example.com' })
+  @IsEmail()
   email: string;
 
-  @ApiProperty({ description: 'Username', example: 'johndoe' })
-  username: string;
-
-  @ApiProperty({ description: 'User first name', example: 'John' })
-  firstName: string;
-
-  @ApiProperty({ description: 'User last name', example: 'Doe' })
-  lastName: string;
-
-  @ApiProperty({ description: 'User role', example: 'USER' })
-  role: string;
+  @ApiProperty({ example: 'secret123' })
+  @IsString()
+  @IsNotEmpty()
+  password: string;
 }
 
-export class AuthResponseDto {
-  @ApiProperty({
-    description: 'JWT access token',
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-  })
-  accessToken: string;
-
-  @ApiProperty({
-    description: 'User information',
-    type: UserDataDto,
-  })
-  user: UserDataDto;
+export class ForgotPasswordDto {
+  @ApiProperty({ example: 'john@example.com' })
+  @IsEmail()
+  email: string;
 }
 
-export class RefreshResponseDto {
-  @ApiProperty({
-    description: 'New JWT access token',
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-  })
-  accessToken: string;
+export class ResetPasswordDto {
+  @ApiProperty({ description: 'Token from password reset email' })
+  @IsString()
+  @IsNotEmpty()
+  token: string;
+
+  @ApiProperty({ example: 'newpassword123', minLength: 6 })
+  @IsString()
+  @MinLength(6)
+  password: string;
 }
 
-export class LogoutResponseDto {
-  @ApiProperty({
-    description: 'Logout success status',
-    example: true,
-  })
-  success: boolean;
+export class AuthUserDto {
+  @ApiProperty({ example: 'john@example.com' })
+  email: string;
+
+  @ApiProperty({ example: 'John Doe' })
+  name: string;
+
+  @ApiProperty({ enum: ['buyer', 'seller'], example: 'buyer' })
+  userType: 'buyer' | 'seller';
 }

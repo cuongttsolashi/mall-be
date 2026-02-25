@@ -13,23 +13,11 @@ export class UsersRepository
     super(prisma, Prisma.ModelName.User);
   }
 
-  // Only custom methods - all CRUD inherited!
   async findByEmail(email: string): Promise<User | null> {
-    return await this.model.findUnique({
-      where: { email },
-    });
-  }
-
-  async findByUsername(username: string): Promise<User | null> {
-    return await this.model.findUnique({
-      where: { username },
-    });
+    return await this.model.findUnique({ where: { email } });
   }
 
   async findById(id: string): Promise<User | null> {
-    return await this.model.findUnique({
-      where: { id },
-    });
+    return await this.model.findUnique({ where: { id } });
   }
-
 }

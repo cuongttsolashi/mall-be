@@ -1,25 +1,28 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { UsersModule } from '../users/users.module';
-import { JwtStrategy } from './strategies/jwt.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { GithubStrategy } from './strategies/github.strategy';
+import { EmailModule } from '@/shared/email/email.module';
+import { UserSessionRepository } from './repositories/user-session.repository';
+import { USER_SESSION_REPOSITORY } from './repositories/user-session.repository.interface';
+import { PasswordResetRepository } from './repositories/password-reset.repository';
+import { PASSWORD_RESET_REPOSITORY } from './repositories/password-reset.repository.interface';
+import { OAuthAccountRepository } from './repositories/oauth-account.repository';
+import { OAUTH_ACCOUNT_REPOSITORY } from './repositories/oauth-account.repository.interface';
 
 @Module({
-  imports: [
-    UsersModule,
-    PassportModule,
-    JwtModule.registerAsync({
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('jwt.secret'),
-      }),
-      inject: [ConfigService],
-    }),
-  ],
+  imports: [PassportModule, EmailModule],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  providers: [
+    AuthService,
+    GoogleStrategy,
+    GithubStrategy,
+    { provide: USER_SESSION_REPOSITORY, useClass: UserSessionRepository },
+    { provide: PASSWORD_RESET_REPOSITORY, useClass: PasswordResetRepository },
+    { provide: OAUTH_ACCOUNT_REPOSITORY, useClass: OAuthAccountRepository },
+  ],
+  exports: [AuthService, USER_SESSION_REPOSITORY],
 })
 export class AuthModule {}
