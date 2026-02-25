@@ -9,7 +9,6 @@ export interface IUsersRepository extends IRepository<User> {
   findByEmail(email: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
   findByUsername(username: string): Promise<User | null>;
-  findActive(params?: { skip?: number; take?: number }): Promise<User[]>;
 }
 
 export const USER_REPOSITORY = Symbol('IUsersRepository');

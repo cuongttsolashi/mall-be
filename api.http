@@ -1,6 +1,6 @@
 ### API - HTTP Requests
 ### Base URL
-@baseUrl = http://localhost:3000
+@baseUrl = http://localhost:8000/api/v1
 @contentType = application/json
 
 ###############################################

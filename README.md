@@ -52,7 +52,7 @@ NODE_ENV="development"
 
 DATABASE_URL="postgresql://user:password@localhost:5432/mall_be?schema=public"
 
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:8000
 
 JWT_SECRET="your-super-secret-jwt-key"
 JWT_ACCESS_TOKEN_EXPIRES_IN="15m"

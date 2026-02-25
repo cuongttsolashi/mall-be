@@ -32,12 +32,4 @@ export class UsersRepository
     });
   }
 
-  async findActive(params?: { skip?: number; take?: number }): Promise<User[]> {
-    return await this.model.findMany({
-      where: { isActive: true },
-      skip: params?.skip,
-      take: params?.take,
-      orderBy: { createdAt: 'desc' },
-    });
-  }
 }

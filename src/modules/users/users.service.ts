@@ -35,10 +35,8 @@ export class UsersService {
   }
 
   async createUser(data: CreateUserInput): Promise<User> {
-    // Check if exists
     const existing =
       data.email && (await this.usersRepository.findByEmail(data.email));
-    // console.log(existing);
     if (existing) {
       throw new Error('User already exists');
     }
